@@ -457,3 +457,107 @@ input[type=number],select {
 .hero-copy { max-width:950px; }
 .about-frame { padding:0; }
 .about-portrait { display:block; width:100%; height:100%; min-height:450px; object-fit:cover; object-position:center center; }
+
+
+/* 31 Oct 2026: small handmade pencil marks, softly raised buttons.
+   Layout, content and functional markup remain unchanged. */
+
+/* Defensive hide for an old hero image if a previously cached markup document is present. */
+.hero .hero-scene,
+.hero img[src*="papercut-worlds.svg"] {
+  display: none !important;
+}
+
+/* A few isolated graphite hatch strokes by infographic pictograms only;
+   no repeated texture overlay over photos, text, cards or the whole page. */
+.service-icon,
+.proof-icon,
+.step strong,
+.note-tile > span:first-child,
+.compare-card .line-doodle,
+.video-card .placeholder-symbol {
+  position: relative;
+  isolation: isolate;
+}
+
+.service-icon,
+.proof-icon,
+.note-tile > span:first-child,
+.compare-card .line-doodle,
+.video-card .placeholder-symbol {
+  width: fit-content;
+}
+
+.service-icon::after,
+.proof-icon::after,
+.step strong::after,
+.note-tile > span:first-child::after,
+.compare-card .line-doodle::after,
+.video-card .placeholder-symbol::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  right: -13px;
+  bottom: -5px;
+  width: 28px;
+  height: 22px;
+  opacity: .46;
+  transform: rotate(-8deg);
+  background: repeating-linear-gradient(
+    151deg,
+    transparent 0,
+    transparent 5px,
+    rgba(62, 50, 44, .36) 5.2px,
+    rgba(62, 50, 44, .36) 5.75px,
+    transparent 6px,
+    transparent 10px
+  );
+}
+
+.service-card-feature .service-icon::after,
+.video-card .placeholder-symbol::after {
+  opacity: .34;
+}
+
+.step strong::after {
+  right: -10px;
+  bottom: -6px;
+  opacity: .32;
+}
+
+/* Subtle physical elevation without changing colours, type or sizes. */
+.btn,
+.sticky-calc,
+.play-btn {
+  box-shadow:
+    0 3px 0 rgba(64, 43, 31, .12),
+    0 7px 15px rgba(64, 43, 31, .13);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover,
+  .play-btn:hover {
+    box-shadow:
+      0 4px 0 rgba(64, 43, 31, .13),
+      0 10px 19px rgba(64, 43, 31, .16);
+    transform: translateY(-1px);
+  }
+  .sticky-calc:hover {
+    box-shadow:
+      0 4px 0 rgba(64, 43, 31, .13),
+      0 11px 20px rgba(64, 43, 31, .16);
+    transform: translate(-50%, -1px);
+  }
+}
+.btn:active,
+.play-btn:active {
+  box-shadow: 0 1px 4px rgba(64, 43, 31, .14);
+  transform: translateY(2px);
+}
+.sticky-calc:active {
+  box-shadow: 0 1px 4px rgba(64, 43, 31, .14);
+  transform: translate(-50%, 2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .sticky-calc, .play-btn { transition: none; }
+}
