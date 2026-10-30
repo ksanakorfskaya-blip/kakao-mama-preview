@@ -158,7 +158,7 @@
               ? `
                 <fieldset class="calc-group">
                   <legend>
-                    04 / Развёрнутый контент для каналов
+                    Развёрнутый контент для каналов
                   </legend>
                   ${check('tg',
                     'Telegram · 10–15 публикаций · 15 000 ₽/мес.',
@@ -183,7 +183,7 @@
 
             ${s.mode === 'full' ? `
               <fieldset class="calc-group">
-                <legend>05 / Разовая упаковка проекта</legend>
+                <legend>Разовая упаковка проекта</legend>
                 <div class="choice-grid">
                   ${radio('packageCost','30000',
                     'Разработка · от 30 000 ₽',
@@ -380,7 +380,7 @@
     if (textarea) {
       textarea.value =
         `Здравствуйте! Хочу обсудить услуги.\n\n` +
-        `${text}\n\nО моём проекте: `;
+        `${text}\n\nО проекте: `;
     }
 
     $('#contact')?.scrollIntoView({ behavior: 'smooth' });
