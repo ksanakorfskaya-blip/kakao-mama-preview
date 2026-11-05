@@ -79,5 +79,6 @@ if(a==="clear"&&current.strokes.length&&confirm("Очистить лист? Уж
 if(a==="save")await saveArt();
 });
 document.addEventListener("input",e=>{if(!current)return;if(e.target.id==="paint-width"){current.size=Number(e.target.value);refreshChoices();}else if(e.target.id==="paint-color-input"){current.color=e.target.value;current.tool=current.tool==="eraser"?"pencil":current.tool;refreshChoices();}});
-window.DrawingStudio={view,gallery,mount,fillGalleries,hasUnsaved:()=>!!(canvas&&dirty)};
+async function clearAll(){try{if("indexedDB" in window){await new Promise(resolve=>{try{const r=indexedDB.deleteDatabase(dbName);r.onsuccess=r.onerror=r.onblocked=()=>resolve();}catch(e){resolve();}});}}catch(e){}try{localStorage.removeItem(fallbackKey);}catch(e){}Object.keys(drafts).forEach(k=>delete drafts[k]);}
+window.DrawingStudio={view,gallery,mount,fillGalleries,clearAll,hasUnsaved:()=>!!(canvas&&dirty)};
 })();
