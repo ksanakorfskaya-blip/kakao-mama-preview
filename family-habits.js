@@ -26,21 +26,7 @@ function mood(id){return moods.find(function(m){return m[0]===id;});}
 function questions(key){let n=Number(key.replace(/-/g,""));return questionSets[n%questionSets.length];}
 function newKid(n,g,a,p){return {id:"c"+Math.random().toString(36).slice(2,10),name:n,gender:g,age:Number(a),color:p,days:{}};}
 function notice(s){let x=document.getElementById("toast");x.textContent=s;x.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(function(){x.classList.remove("show");},2600);}
-function character(g,a){let teen=a>=10,girl=g==="girl";let hair=girl?"#462c27":"#52352b",shirt=teen?"#dcc7a9":"#fdf0df",bottom=girl&&!teen?"#c87f5b":"#67584d";
-return '<svg viewBox="0 0 240 205" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+(girl?"Девочка":"Мальчик")+(teen?" подросток":" младшего возраста")+'">'
-+'<ellipse cx="121" cy="106" rx="102" ry="88" fill="#f6e7d9"/><path d="M28 173Q18 146 35 126M42 176Q23 143 44 112M201 176q22-31 8-50m-19 51q19-37 5-60" stroke="#8d9d65" stroke-width="8" stroke-linecap="round" fill="none"/>'
-+'<path d="M90 130h25l-7 54H87zM122 130h21l6 54h-25z" fill="'+bottom+'"/><path d="M83 181l26 0 2 14H79zM123 181h28l8 14h-37z" fill="#fffaf3" stroke="#826450" stroke-width="2.5"/>'
-+'<path d="M83 90Q67 94 65 132l21 10 12-32-3 33h47l-4-34 13 32 20-10Q165 97 141 89z" fill="'+shirt+'" stroke="#796051" stroke-width="2.5"/>'
-+(girl&&!teen?'<path d="M85 138h58l15 25H76z" fill="#bf7350"/>':'')
-+(teen?'<path d="M71 98Q60 109 69 153l20-2-4-46" fill="#bc9168" stroke="#806148" stroke-width="2"/>':'<path d="M145 112q19 2 20 23l-7 13-17-8z" fill="#ead0ac" stroke="#8b6b4f" stroke-width="2"/>')
-+'<rect x="107" y="81" width="19" height="20" rx="7" fill="#eeb18f"/>'
-+(girl?'<path d="M79 61Q59 11 113 16q45 0 39 51l-13 26-8-32H92l-8 33-14-8z" fill="'+hair+'"/>':'<path d="M78 55q-8-25 10-33 14-13 26-3 15-13 28 4 15 5 7 34l-17-15-13 7-15-9-14 15z" fill="'+hair+'"/>')
-+'<ellipse cx="114" cy="58" rx="33" ry="37" fill="#f5bd9a" stroke="#83604c" stroke-width="2"/>'
-+'<path d="M82 51q-5-27 18-31 18-8 31 5l16 22-19-9-18-7-13 13-10-2z" fill="'+hair+'"/>'
-+'<path d="M97 62q5 6 10 0m14 0q5 6 10 0" stroke="#5d3d34" stroke-width="2.7" stroke-linecap="round" fill="none"/><path d="M109 75q7 7 15 0" stroke="#b36750" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="93" cy="70" r="5" fill="#ec9e87" opacity=".7"/><circle cx="135" cy="70" r="5" fill="#ec9e87" opacity=".7"/>'
-+(girl&&!teen?'<path d="M78 54q-14 19 0 37l11-7-3-31zM145 54q13 19 0 38l-12-8 4-29z" fill="'+hair+'"/>':'')
-+(teen?'<path d="M87 27q34-18 57 5" stroke="#765344" stroke-width="5" fill="none"/>':'')
-+'<path d="m158 57 13-13m-6 25 14-5" stroke="#df924c" stroke-width="3.5" stroke-linecap="round"/></svg>';}
+function character(g,a){const teen=Number(a)>=10;const girl=g==="girl";const file=girl?(teen?"girl-teen":"girl-small"):(teen?"boy-teen":"boy-small");return '<img class="drawn-character" src="./assets/'+file+'.webp" alt="'+(girl?"Девочка":"Мальчик")+(teen?" подросткового возраста":" младшего возраста")+'" width="160" height="200" draggable="false">';}
 const icons={home:'<path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z"/>',star:'<path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.5-6 3.5 1-7-5-5 7-1z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 21v-2c0-6 13-6 13 0v2M16 5q6 1 3 6m-2 3q5 0 5 6"/>',book:'<path d="M12 6q-5-4-10-1v15q5-2 10 1 5-3 10-1V5q-5-3-10 1zM12 6v15"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 22v-2c0-11 16-11 16 0v2"/>'};
 function icon(s){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+icons[s]+'</svg>';}
 function header(c){return '<div class="topbar"><div class="brand"><span class="brand-mark">♥</span><span>Мои<br>полезные<br>привычки</span></div><button class="selector" data-a="nav" data-p="children"><span class="selector-avatar">'+character(c.gender,c.age)+'</span>'+esc(c.name)+', '+c.age+' лет⌄</button><button class="profile-button" data-a="nav" data-p="profile">👩🏻</button></div>';}
