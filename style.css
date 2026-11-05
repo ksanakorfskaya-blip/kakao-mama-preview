@@ -29,3 +29,15 @@ h1,h2,h3,p{margin:0}h1{font-size:32px;line-height:1.1;font-weight:900;letter-spa
 .kid-card .avatar .drawn-character{height:auto;max-height:145px}
 .tiny-illustration .avatar .drawn-character{max-height:200px;object-fit:contain}
 .parent-hero .avatar .drawn-character{max-height:118px}
+
+/* Hero illustration arrangements taken from the approved screens */
+.avatar-hero{height:174px;min-height:174px}
+.avatar-hero .drawn-character{height:172px;max-height:172px;border-radius:16px}
+.kid-card .avatar{height:144px;min-height:144px}
+.kid-card .avatar .drawn-character{width:100%;height:135px;max-height:135px;object-fit:contain;border-radius:16px}
+.welcome-illustration .avatar{height:180px}
+.welcome-illustration .avatar .drawn-character{height:180px;max-height:180px;object-fit:contain}
+.profile-button{overflow:hidden;display:grid;place-items:center}
+.profile-button img{width:57px;height:45px;max-width:none;object-fit:cover;object-position:center 4%;transform:translate(-2px,5px)}
+.parent-hero .avatar{width:144px;min-width:144px;height:116px;overflow:hidden}
+.parent-hero .avatar .drawn-character{width:144px;height:112px;object-fit:cover;border-radius:18px}
