@@ -107,7 +107,7 @@ case "parent":state.parent=document.getElementById("parentname").value.trim();sa
 case "reset":if(confirm("Удалить все данные этой демонстрации в данном браузере?")){localStorage.removeItem(STORE);state=load();page="welcome";draw(true);}break;
 }}
 document.addEventListener("click",function(e){let el=e.target.closest("[data-a]");if(el){e.preventDefault();act(el.dataset.a,el);}});
-document.addEventListener("input",function(e){let x=e.target;if(x.id==="age"){form.age=Number(x.value);let l=document.getElementById("ageval");if(l)l.textContent=form.age+" лет";}if(x.dataset.answer!==undefined){let c=cur();if(c){getDay(c).answers[Number(x.dataset.answer)]=x.value;save();}}});
+document.addEventListener("input",function(e){let x=e.target;if(x.id==="age"){form.age=Number(x.value);let l=document.getElementById("ageval");if(l)l.textContent=form.age+" лет";let av=document.querySelector(".tiny-illustration .avatar");if(av)av.innerHTML=character(form.gender,form.age);}if(x.dataset.answer!==undefined){let c=cur();if(c){getDay(c).answers[Number(x.dataset.answer)]=x.value;save();}}});
 document.addEventListener("change",function(e){let x=e.target;if(x.dataset.food){let c=cur(),d=getDay(c),id=x.dataset.food,v=x.dataset.v;let a=d.food[id]||[];d.food[id]=x.checked?Array.from(new Set(a.concat([v]))):a.filter(function(s){return s!==v;});save();}});
 draw(true);
 })();
