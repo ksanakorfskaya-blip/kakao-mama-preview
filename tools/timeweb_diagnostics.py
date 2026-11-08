@@ -224,6 +224,38 @@ def check_new_public():
         except (urllib.error.URLError,TimeoutError,OSError,ValueError) as exc:
             print(route,"connection error:",type(exc).__name__)
 
+def public_dns_and_tls_check():
+    import ssl
+    print("\nPUBLIC DNS CROSS-CHECK")
+    domain="family-habits-auth-test.tw1.ru"
+    for provider,url in [
+        ("Google", "https://dns.google/resolve?"+urllib.parse.urlencode({"name":domain,"type":"A"})),
+        ("Cloudflare","https://cloudflare-dns.com/dns-query?"+urllib.parse.urlencode({"name":domain,"type":"A"}))
+    ]:
+        try:
+            req=urllib.request.Request(url,headers={"Accept":"application/dns-json"})
+            with urllib.request.urlopen(req,timeout=12) as response:
+                data=json.load(response)
+                print(provider,"DNS status:",safe_status(data.get("Status")),
+                      "A answers:",[r.get("data") for r in data.get("Answer",[]) if r.get("type")==1][:5])
+        except (urllib.error.URLError,TimeoutError,OSError,ValueError) as exc:
+            print(provider,"DNS query failed:",type(exc).__name__)
+    print("DIRECT IP / NEW HOST TLS")
+    # This test bypasses DNS solely for diagnosis, without changing DNS.
+    try:
+        context=ssl.create_default_context()
+        with socket.create_connection(("212.193.24.40",443),timeout=9) as raw:
+            with context.wrap_socket(raw,server_hostname=domain) as tls:
+                print("TLS hostname verified:",True,"version:",safe_status(tls.version()))
+                tls.settimeout(9)
+                tls.sendall(("GET /health HTTP/1.1\\r\\nHost: "+domain+
+                             "\\r\\nConnection: close\\r\\n\\r\\n").encode("ascii"))
+                first=tls.recv(200).split(b"\\r\\n",1)[0].decode("ascii",errors="replace")
+                print("Direct TLS HTTP response:",safe_status(first))
+    except (OSError,TimeoutError,ValueError) as exc:
+        print("Direct TLS handshake failed:",type(exc).__name__,safe_status(str(exc)[:110]))
+
+
 def scan_logs(payload):
     if payload is None:
         return
@@ -342,6 +374,7 @@ def main():
     distributed_http_check()
     globalping_russia_check()
     check_new_public()
+    public_dns_and_tls_check()
     globalping_russia_check("https://family-habits-auth-test.tw1.ru")
     print("\nCompleted. No account resources were modified.")
     return 0
