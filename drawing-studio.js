@@ -33,7 +33,7 @@ return '<section class="paint-intro"><div class="row between"><div><span class="
 +'<div class="paint-canvas-shell"><div class="paint-canvas-head"><span>✦ Лист для творчества</span><span>♡</span></div><canvas id="kid-paint-canvas" width="720" height="720" data-child-id="'+escape(child.id)+'" data-day="'+day+'" aria-label="Поле для рисования пальцем или мышью">Здесь можно рисовать</canvas></div>'
 +'<div class="paint-actions"><button class="btn secondary small-btn" data-paint="undo">↶ Отменить</button><button class="btn secondary small-btn" data-paint="redo">↷ Вернуть</button><button class="btn secondary small-btn" data-paint="clear">🗑 Очистить</button></div>'
 +'<button class="btn full paint-save" data-paint="save">💗 Сохранить рисунок дня</button>'
-+'<p class="notice center">Рисунок останется в дневнике этого ребёнка. После сохранения добавим ⭐ 2 звёздочки — только один раз за день.</p>'
++'<p class="notice center">Сохранённый рисунок останется в дневнике этого ребёнка.</p>'
 +'<div class="paint-saved"><h2>🖼️ Мои рисунки за сегодня</h2><div class="drawing-gallery" data-child="'+escape(child.id)+'" data-day="'+day+'"><p class="medium">Загружаем рисунки…</p></div></div>';
 }
 function gallery(childId,day,title){return '<div class="card paint-memory"><div class="row between"><h3>🎨 '+(title||"Рисунки на память")+'</h3><span class="mini-chip">🖼️</span></div><div class="drawing-gallery" data-child="'+escape(childId)+'" data-day="'+day+'"><p class="medium">Загружаем рисунки…</p></div></div>';}
@@ -59,7 +59,7 @@ const data=canvas.toDataURL("image/webp",.83);if(!data.startsWith("data:image/")
 const [childId,day]=[canvas.dataset.childId,canvas.dataset.day];
 const key=idFor(childId,day),record={id:key+"|"+Date.now()+"|"+Math.random().toString(36).slice(2,6),childDay:key,childId:childId,day:day,created:new Date().toISOString(),image:data};
 const success=await store(record);if(!success){notify("Недостаточно места в браузере. Попробуйте освободить память.");return;}
-current.savedAtLength=current.strokes.length;dirty=false;notify("Рисунок сохранён в дневнике! ⭐");if(typeof window.onFamilyDrawingSaved==="function")window.onFamilyDrawingSaved(childId,day);
+current.savedAtLength=current.strokes.length;dirty=false;notify("Рисунок сохранён в дневнике! 🎨");if(typeof window.onFamilyDrawingSaved==="function")window.onFamilyDrawingSaved(childId,day);
 await fillGalleries();
 }catch(e){notify("Не удалось сохранить рисунок");}finally{saving=false;if(b){b.disabled=false;b.textContent="💗 Сохранить рисунок дня";}}
 }
@@ -79,6 +79,32 @@ if(a==="clear"&&current.strokes.length&&confirm("Очистить лист? Уж
 if(a==="save")await saveArt();
 });
 document.addEventListener("input",e=>{if(!current)return;if(e.target.id==="paint-width"){current.size=Number(e.target.value);refreshChoices();}else if(e.target.id==="paint-color-input"){current.color=e.target.value;current.tool=current.tool==="eraser"?"pencil":current.tool;refreshChoices();}});
+async function removeStored(match,draftMatch){
+ try{
+  if("indexedDB" in window){
+   const db=await openDb();
+   try{
+    await new Promise((resolve,reject)=>{
+     const tx=db.transaction("drawings","readwrite");
+     const req=tx.objectStore("drawings").openCursor();
+     req.onsuccess=()=>{const cursor=req.result;if(cursor){if(match(cursor.value))cursor.delete();cursor.continue();}};
+     req.onerror=()=>reject(req.error||new Error("Cannot read drawings"));
+     tx.oncomplete=()=>resolve();
+     tx.onerror=()=>reject(tx.error||new Error("Cannot delete drawings"));
+     tx.onabort=()=>reject(tx.error||new Error("Drawing deletion aborted"));
+    });
+   }finally{db.close();}
+  }
+  const fallback=JSON.parse(localStorage.getItem(fallbackKey)||"[]");
+  if(!Array.isArray(fallback))throw new Error("Invalid fallback");
+  localStorage.setItem(fallbackKey,JSON.stringify(fallback.filter(row=>!match(row))));
+  Object.keys(drafts).forEach(key=>{if(draftMatch(key))delete drafts[key];});
+  return true;
+ }catch(e){return false;}
+}
+function savedDay(row){return row.day||(typeof row.childDay==="string"?row.childDay.split("|").pop():"");}
+async function clearPast(before){return removeStored(row=>savedDay(row)<before,key=>key.split("|").pop()<before);}
+async function clearChild(childId){return removeStored(row=>row.childId===childId||(typeof row.childDay==="string"&&row.childDay.startsWith(childId+"|")),key=>key.startsWith(childId+"|"));}
 async function clearAll(){try{if("indexedDB" in window){await new Promise(resolve=>{try{const r=indexedDB.deleteDatabase(dbName);r.onsuccess=r.onerror=r.onblocked=()=>resolve();}catch(e){resolve();}});}}catch(e){}try{localStorage.removeItem(fallbackKey);}catch(e){}Object.keys(drafts).forEach(k=>delete drafts[k]);}
-window.DrawingStudio={view,gallery,mount,fillGalleries,clearAll,hasUnsaved:()=>!!(canvas&&dirty)};
+window.DrawingStudio={view,gallery,mount,fillGalleries,clearAll,clearPast,clearChild,hasUnsaved:()=>!!(canvas&&dirty)};
 })();
