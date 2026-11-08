@@ -191,6 +191,7 @@ def globalping_russia_check(target_url=PUBLIC):
                   "status",safe_status(status.get("status")),
                   "HTTP",safe_status(status.get("statusCode")),
                   "error",safe_status(status.get("error")),
+                  "result_keys",",".join(sorted(status.keys())[:12]),
                   "TLS",safe_status(status.get("tls",{}).get("authorized") if isinstance(status.get("tls"),dict) else None))
     except urllib.error.HTTPError as exc:
         # An HTTP 422 often means no probes in that region; response is not printed.
@@ -278,6 +279,26 @@ def main():
             for d in info.get("domains",[]) if isinstance(d,dict)
         ))
     print("\\nTECHNICAL DOMAIN AVAILABILITY")
+    print("NEW DOMAIN DNS CONFIGURATION")
+    domain_response=api_get("/api/v1/domains/family-habits-auth-test.tw1.ru")
+    if isinstance(domain_response,dict):
+        d=domain_response.get("domain",domain_response)
+        if isinstance(d,dict):
+            print("Technical:",safe_status(d.get("is_technical")))
+            print("Domain status:",safe_status(d.get("domain_status")))
+            print("Linked IP:",safe_status(d.get("linked_ip")))
+    dns_response=api_get("/api/v1/domains/family-habits-auth-test.tw1.ru/dns-records")
+    if isinstance(dns_response,dict):
+        print("DNS response keys:",",".join(sorted(dns_response.keys())[:12]))
+        for key in ("dns_records","dnsRecords","records"):
+            records=dns_response.get(key)
+            if isinstance(records,list):
+                print("DNS record count:",len(records))
+                for record in records[:5]:
+                    if isinstance(record,dict):
+                        print("Record type:",safe_status(record.get("type")),
+                              "record keys:",",".join(sorted(record.keys())[:12]))
+                break
     for candidate in ("family-habits-auth-test.tw1.ru", "family-habits-test.tw1.ru"):
         result=api_get("/api/v1/check-domain/"+candidate)
         if isinstance(result,dict):
