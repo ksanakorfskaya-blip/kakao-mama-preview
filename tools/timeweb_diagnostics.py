@@ -148,6 +148,57 @@ def distributed_http_check():
         print("External probe unavailable:",type(exc).__name__)
 
 
+def globalping_russia_check():
+    """Independent public Globalping HTTP checks from RU and DE probes."""
+    print("\nGLOBALPING COUNTRY CHECK")
+    api="https://api.globalping.io/v1/measurements"
+    target=urllib.parse.urlsplit(PUBLIC).hostname
+    request_body={
+        "type":"http",
+        "target":target,
+        "locations":[{"country":"RU","limit":5},{"country":"DE","limit":2}],
+        "measurementOptions":{"protocol":"HTTPS","port":443,"request":{"method":"GET","path":"/health"}},
+        "timeout":20,
+    }
+    headers={"Accept":"application/json","Content-Type":"application/json","User-Agent":"FamilyHabitsDiagnostics/1.0 (GitHub Actions)"}
+    try:
+        payload=json.dumps(request_body).encode("utf-8")
+        req=urllib.request.Request(api,data=payload,headers=headers,method="POST")
+        with urllib.request.urlopen(req,timeout=20) as response:
+            created=json.load(response)
+        measurement_id=created.get("id")
+        if not isinstance(measurement_id,str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,70}",measurement_id):
+            print("Globalping request did not return a measurement id")
+            return
+        print("Measurement:",safe_status(measurement_id))
+        import time
+        result={}
+        for attempt in range(15):
+            time.sleep(2)
+            req=urllib.request.Request(api+"/"+measurement_id,headers=headers)
+            with urllib.request.urlopen(req,timeout=15) as response:
+                result=json.load(response)
+            if result.get("status")!="in-progress":
+                break
+        print("Status:",safe_status(result.get("status")))
+        print("Probe count:",safe_status(result.get("probesCount")))
+        for entry in result.get("results",[])[:12]:
+            probe=entry.get("probe",{})
+            status=entry.get("result",{})
+            location=probe.get("country") or probe.get("location",{}).get("country") or "unknown"
+            city=probe.get("city") or ""
+            print("Probe",safe_status(location),safe_status(city),
+                  "status",safe_status(status.get("status")),
+                  "HTTP",safe_status(status.get("statusCode")),
+                  "error",safe_status(status.get("error")),
+                  "TLS",safe_status(status.get("tls",{}).get("authorized") if isinstance(status.get("tls"),dict) else None))
+    except urllib.error.HTTPError as exc:
+        # An HTTP 422 often means no probes in that region; response is not printed.
+        print("Globalping request HTTP",exc.code)
+    except (urllib.error.URLError,TimeoutError,OSError,ValueError,KeyError,AttributeError) as exc:
+        print("Globalping unavailable:",type(exc).__name__)
+
+
 def scan_logs(payload):
     if payload is None:
         return
@@ -217,6 +268,7 @@ def main():
     check_public()
     check_public_pages()
     distributed_http_check()
+    globalping_russia_check()
     print("\nCompleted. No account resources were modified.")
     return 0
 
