@@ -1,0 +1,22 @@
+name: One-time authorized Timeweb free domain binding
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/timeweb-bind-free-domain.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bind-existing-free-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Attach only the existing free .tw1.ru domain to the existing app
+        env:
+          TIMEWEB_API_TOKEN: ${{ secrets.TIMEWEB_API_TOKEN }}
+        run: python3 tools/timeweb_bind_test_domain.py
