@@ -148,11 +148,11 @@ def distributed_http_check():
         print("External probe unavailable:",type(exc).__name__)
 
 
-def globalping_russia_check():
+def globalping_russia_check(target_url=PUBLIC):
     """Independent public Globalping HTTP checks from RU and DE probes."""
-    print("\nGLOBALPING COUNTRY CHECK")
+    print("\nGLOBALPING COUNTRY CHECK:",urllib.parse.urlsplit(target_url).hostname)
     api="https://api.globalping.io/v1/measurements"
-    target=urllib.parse.urlsplit(PUBLIC).hostname
+    target=urllib.parse.urlsplit(target_url).hostname
     request_body={
         "type":"http",
         "target":target,
@@ -198,6 +198,29 @@ def globalping_russia_check():
     except (urllib.error.URLError,TimeoutError,OSError,ValueError,KeyError,AttributeError) as exc:
         print("Globalping unavailable:",type(exc).__name__)
 
+
+def check_new_public():
+    host="family-habits-auth-test.tw1.ru"
+    print("\nNEW DOMAIN CHECK",host)
+    try:
+        records=socket.getaddrinfo(host,443,type=socket.SOCK_STREAM)
+        ips=sorted({r[4][0] for r in records})
+        print("DNS:",", ".join(ips) if ips else "none")
+    except OSError as exc:
+        print("DNS error:",type(exc).__name__)
+        return
+    for route in ("/health","/","/account.html"):
+        req=urllib.request.Request("https://"+host+route,method="GET")
+        try:
+            with urllib.request.urlopen(req,timeout=12) as response:
+                print(route,"HTTP",response.status,"TLS verified by Python",True)
+                if route=="/health":
+                    v=json.loads(response.read(2048))
+                    print("health.ok:",safe_status(v.get("ok")),"db:",safe_status(v.get("database")),"email:",safe_status(v.get("email")))
+        except urllib.error.HTTPError as exc:
+            print(route,"HTTP",exc.code)
+        except (urllib.error.URLError,TimeoutError,OSError,ValueError) as exc:
+            print(route,"connection error:",type(exc).__name__)
 
 def scan_logs(payload):
     if payload is None:
@@ -281,6 +304,8 @@ def main():
     check_public_pages()
     distributed_http_check()
     globalping_russia_check()
+    check_new_public()
+    globalping_russia_check("https://family-habits-auth-test.tw1.ru")
     print("\nCompleted. No account resources were modified.")
     return 0
 
