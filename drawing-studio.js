@@ -14,10 +14,10 @@ function openDb(){return new Promise((resolve,reject)=>{
  r.onupgradeneeded=function(){const db=r.result;if(!db.objectStoreNames.contains("drawings")){const s=db.createObjectStore("drawings",{keyPath:"id"});s.createIndex("childDay","childDay",{unique:false});}};
  r.onerror=()=>reject(r.error||new Error("DB error"));r.onsuccess=()=>resolve(r.result);
 });}
-async function store(record){try{const db=await openDb();try{await new Promise((resolve,reject)=>{const t=db.transaction("drawings","readwrite");t.objectStore("drawings").put(record);t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});return true;}finally{db.close();}}catch(e){
+async function store(record){if(window.FamilyCloud&&window.FamilyCloud.active()){try{await window.FamilyCloud.addDrawing(record);return true;}catch(e){notify("Не удалось сохранить рисунок в облаке: "+e.message);return false;}}try{const db=await openDb();try{await new Promise((resolve,reject)=>{const t=db.transaction("drawings","readwrite");t.objectStore("drawings").put(record);t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});return true;}finally{db.close();}}catch(e){
 try{const data=JSON.parse(localStorage.getItem(fallbackKey)||"[]");data.push(record);localStorage.setItem(fallbackKey,JSON.stringify(data.slice(-30)));return true;}catch(er){return false;}
 }}
-async function list(childId,day){const key=idFor(childId,day);let rows=[];try{const db=await openDb();try{rows=await new Promise((resolve,reject)=>{const t=db.transaction("drawings","readonly");const req=t.objectStore("drawings").index("childDay").getAll(key);req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}finally{db.close();}}catch(e){}
+async function list(childId,day){if(window.FamilyCloud&&window.FamilyCloud.active()){try{return await window.FamilyCloud.drawings(childId,day);}catch(e){return [];}}const key=idFor(childId,day);let rows=[];try{const db=await openDb();try{rows=await new Promise((resolve,reject)=>{const t=db.transaction("drawings","readonly");const req=t.objectStore("drawings").index("childDay").getAll(key);req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}finally{db.close();}}catch(e){}
 try{const fallback=JSON.parse(localStorage.getItem(fallbackKey)||"[]").filter(r=>r.childDay===key);rows=rows.concat(fallback);}catch(e){}
 return rows.sort((a,b)=>b.created.localeCompare(a.created));}
 function escape(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -103,8 +103,8 @@ async function removeStored(match,draftMatch){
  }catch(e){return false;}
 }
 function savedDay(row){return row.day||(typeof row.childDay==="string"?row.childDay.split("|").pop():"");}
-async function clearPast(before){return removeStored(row=>savedDay(row)<before,key=>key.split("|").pop()<before);}
-async function clearChild(childId){return removeStored(row=>row.childId===childId||(typeof row.childDay==="string"&&row.childDay.startsWith(childId+"|")),key=>key.startsWith(childId+"|"));}
+async function clearPast(before){if(window.FamilyCloud&&window.FamilyCloud.active()){try{await window.FamilyCloud.deleteDrawingsPast(before);}catch(e){return false;}}return removeStored(row=>savedDay(row)<before,key=>key.split("|").pop()<before);}
+async function clearChild(childId){if(window.FamilyCloud&&window.FamilyCloud.active()){try{await window.FamilyCloud.deleteDrawingsChild(childId);}catch(e){return false;}}return removeStored(row=>row.childId===childId||(typeof row.childDay==="string"&&row.childDay.startsWith(childId+"|")),key=>key.startsWith(childId+"|"));}
 async function clearAll(){try{if("indexedDB" in window){await new Promise(resolve=>{try{const r=indexedDB.deleteDatabase(dbName);r.onsuccess=r.onerror=r.onblocked=()=>resolve();}catch(e){resolve();}});}}catch(e){}try{localStorage.removeItem(fallbackKey);}catch(e){}Object.keys(drafts).forEach(k=>delete drafts[k]);}
 window.DrawingStudio={view,gallery,mount,fillGalleries,clearAll,clearPast,clearChild,hasUnsaved:()=>!!(canvas&&dirty)};
 })();
