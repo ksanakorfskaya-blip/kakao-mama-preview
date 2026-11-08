@@ -18,13 +18,18 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){retur
 function date(offset){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+(offset||0));return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function dateNice(k){return new Date(k+"T12:00:00").toLocaleDateString("ru-RU",{day:"numeric",month:"long"});}
 function cur(){return state.children.find(function(c){return c.id===state.selected;})||state.children[0];}
-function getDay(c,key){key=key||date();if(!c.days)c.days={};if(!c.days[key])c.days[key]={tasks:{},food:{},morning:"",evening:"",answers:["","",""],bonuses:[],closed:false};let d=c.days[key];d.food=d.food||{};d.tasks=d.tasks||{};d.answers=d.answers||["","",""];d.bonuses=d.bonuses||[];d.exchanges=Number.isInteger(d.exchanges)&&d.exchanges>=0?d.exchanges:0;return d;}
+function getDay(c,key){key=key||date();if(!c.days)c.days={};if(!c.days[key])c.days[key]={tasks:{},food:{},morning:"",evening:"",answers:["","",""],bonuses:[],closed:false};let d=c.days[key];d.food=d.food||{};d.tasks=d.tasks||{};d.answers=d.answers||["","",""];d.bonuses=d.bonuses||[];d.exchanges=Number.isInteger(d.exchanges)&&d.exchanges>=0?d.exchanges:0;d.spent=Array.isArray(d.spent)?d.spent:[];return d;}
 function stars(c,key){let d=getDay(c,key);return dailyTasks.reduce(function(n,t){return n+(d.tasks[t[0]]==="yes"?1:0);},0);}
-function total(c){return Object.keys(c.days||{}).reduce(function(n,k){return n+stars(c,k);},0);}
+function total(c){return (Number(c.carryStars)||0)+Object.keys(c.days||{}).reduce(function(n,k){return n+stars(c,k);},0);}
 function totalExchanges(c){return Object.keys(c.days||{}).reduce(function(n,k){return n+getDay(c,k).exchanges;},0);}
 function starBalance(c){return Math.max(0,total(c)-10*totalExchanges(c));}
 function coins(c,key){let d=getDay(c,key);return d.bonuses.reduce(function(n,b){return n+(Number(b.points)||0);},0)+d.exchanges;}
-function coinTotal(c){return Object.keys(c.days||{}).reduce(function(n,k){return n+coins(c,k);},0);}
+function coinTotal(c){return (Number(c.carryCoins)||0)+Object.keys(c.days||{}).reduce(function(n,k){return n+coins(c,k);},0);}
+function spentDay(c,key){return getDay(c,key).spent.reduce(function(n,t){return n+(Number(t.amount)||0);},0);}
+function spentTotal(c){return Object.keys(c.days||{}).reduce(function(n,k){return n+spentDay(c,k);},0);}
+function coinBalance(c){return Math.max(0,coinTotal(c)-spentTotal(c));}
+function spendEntries(c){return Object.keys(c.days||{}).reduce(function(list,k){getDay(c,k).spent.forEach(function(e){list.push({day:k,at:e.at||"",amount:e.amount,note:e.note||"Подарок от родителей"});});return list;},[]).sort(function(a,b){return b.at.localeCompare(a.at);});}
+
 function completed(c,k){let d=getDay(c,k);return dailyTasks.filter(function(t){return d.tasks[t[0]]==="yes";}).length;}
 function answered(c,k){let d=getDay(c,k);return dailyTasks.filter(function(t){return !!d.tasks[t[0]];}).length;}
 function mood(id){return moods.find(function(m){return m[0]===id;});}
