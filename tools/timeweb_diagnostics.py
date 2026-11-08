@@ -93,7 +93,7 @@ def main():
         print("TIMEWEB_API_TOKEN is not configured in GitHub Actions secrets.")
         return 2
 
-    print("TIMEWEB READ-ONLY DIAGNOSTICS")
+    print("TIMEWEB READ-ONLY DIAGNOSTICS (GitHub Actions)")
     print("UTC:", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
     apps = api_get("/api/v1/apps")
     if not isinstance(apps, dict) or not isinstance(apps.get("apps"), list):
