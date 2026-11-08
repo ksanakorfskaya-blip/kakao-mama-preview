@@ -42,8 +42,23 @@ if(removedSslParameters.length)console.log("PostgreSQL SSL URL options handled b
 const pool=new Pool({connectionString:databaseConnectionUrl.toString(),ssl,max:5,connectionTimeoutMillis:10000});
 const mailer=nodemailer.createTransport({
   host:config.smtpHost,port:config.smtpPort,secure:config.smtpSecure,
-  auth:{user:config.smtpUser,pass:config.smtpPassword}
+  auth:{user:config.smtpUser,pass:config.smtpPassword},
+  connectionTimeout:20000,greetingTimeout:10000,socketTimeout:20000
 });
+let smtpReady=false;
+let smtpChecking=false;
+async function checkSmtp(){
+  if(smtpChecking)return;
+  smtpChecking=true;
+  try{
+    await mailer.verify();
+    if(!smtpReady)console.log("SMTP verification passed");
+    smtpReady=true;
+  }catch(e){
+    smtpReady=false;
+    console.error("SMTP verification failed:",e.code||e.message);
+  }finally{smtpChecking=false;}
+}
 const app=express();
 app.set("trust proxy",1);
 app.disable("x-powered-by");
@@ -117,12 +132,13 @@ async function consumeLink(value,purpose){
     await client.query("COMMIT");return q.rows[0].user_id;
   }catch(e){await client.query("ROLLBACK");throw e;}finally{client.release();}
 }
-app.get("/health",async(req,res)=>{try{await pool.query("SELECT 1");res.json({ok:true});}catch(e){res.status(503).json({ok:false});}});
+app.get("/health",async(req,res)=>{try{await pool.query("SELECT 1");res.json({ok:true,database:"ready",email:smtpReady?"ready":"unavailable"});}catch(e){res.status(503).json({ok:false,database:"unavailable"});}});
 app.get("/api/auth/me",async(req,res,next)=>{
   try{const user=await session(req);res.json({authenticated:!!user,user:user?{id:user.id,email:user.email}:null});}catch(e){next(e);}
 });
 app.post("/api/auth/register",async(req,res,next)=>{
   try{
+    if(!smtpReady)return error(res,"Отправка писем временно недоступна. Попробуйте позже.",503);
     const em=email(req.body?.email),pass=req.body?.password,adult=req.body?.isAdult===true;
     if(!em||!passwordOk(pass)||!adult)return error(res,"Нужна почта, пароль от 12 символов (до 72 байт) и подтверждение совершеннолетия");
     const exists=await pool.query("SELECT id,email_verified FROM family_users WHERE email=$1",[em]);
@@ -162,6 +178,7 @@ app.post("/api/auth/logout",signedIn,async(req,res,next)=>{
 });
 app.post("/api/auth/forgot",async(req,res,next)=>{
   try{
+    if(!smtpReady)return error(res,"Отправка писем временно недоступна. Попробуйте позже.",503);
     const em=email(req.body?.email);
     if(em){const q=await pool.query("SELECT id,email_verified FROM family_users WHERE email=$1",[em]);if(q.rows[0]?.email_verified)await sendLink(q.rows[0].id,"reset",em);}
     res.json({ok:true});
@@ -243,8 +260,12 @@ app.use((err,req,res,next)=>{
 });
 async function start(){
   await pool.query(fs.readFileSync(path.join(__dirname,"schema.sql"),"utf8"));
-  await mailer.verify();
+  console.log("PostgreSQL schema ready");
   const port=Number(process.env.PORT||3000);
   app.listen(port,"0.0.0.0",()=>console.log("Family Habits cloud listening at "+port));
+  // SMTP failure must not prevent the web server from accepting requests.
+  // Registration and password recovery remain blocked until email verifies.
+  void checkSmtp();
+  setInterval(()=>{if(!smtpReady)void checkSmtp();},5*60*1000).unref();
 }
 start().catch(e=>{console.error("Server setup failed:",e.message);process.exitCode=1;pool.end();});
