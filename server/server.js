@@ -118,6 +118,7 @@ app.post("/api/auth/register",async(req,res,next)=>{
     const exists=await pool.query("SELECT id,email_verified FROM family_users WHERE email=$1",[em]);
     if(exists.rows.length){
       if(exists.rows[0].email_verified)return error(res,"Этот адрес уже зарегистрирован. Попробуйте войти.",409);
+      await pool.query("UPDATE family_users SET password_hash=$1 WHERE id=$2 AND email_verified=FALSE",[await bcrypt.hash(pass,12),exists.rows[0].id]);
       await sendLink(exists.rows[0].id,"verify",em);return res.json({ok:true});
     }
     const hash=await bcrypt.hash(pass,12);
