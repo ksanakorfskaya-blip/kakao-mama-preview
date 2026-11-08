@@ -90,6 +90,64 @@ def check_public_pages():
             print(route, type(exc).__name__)
 
 
+def distributed_http_check():
+    """Check from Russian and foreign networks using public Check-Host API.
+
+    This sends only the already-public /health URL. It cannot test residential
+    Russian operators and should not be treated as universal reachability.
+    """
+    print("\nDISTRIBUTED HTTP CHECK")
+    provider="https://check-host.net"
+    try:
+        def get_json(path):
+            req=urllib.request.Request(provider+path,headers={"Accept":"application/json","User-Agent":"family-habits-uptime-check/1.0"})
+            with urllib.request.urlopen(req,timeout=15) as response:
+                return json.load(response)
+
+        nodes_data=get_json("/nodes/hosts")
+        available=nodes_data.get("nodes",{})
+        russian=[name for name,details in available.items() if details.get("location",[""])[0]=="ru"]
+        foreign=[name for name,details in available.items() if details.get("location",[""])[0] in ("de","nl","fi","fr")]
+        chosen=russian[:4]+foreign[:2]
+        if not chosen:
+            print("No suitable Check-Host monitoring nodes available")
+            return
+        params=[("host",PUBLIC+"/health")]
+        params.extend(("node",name) for name in chosen)
+        response=get_json("/check-http?"+urllib.parse.urlencode(params))
+        request_id=response.get("request_id")
+        if not isinstance(request_id,str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,70}",request_id):
+            print("Probe service did not issue a valid request ID")
+            return
+        print("Check-Host report:",safe_status(response.get("permanent_link")))
+        print("Nodes:",len(chosen),"of which Russia:",len(russian[:4]))
+        import time
+        result={}
+        for attempt in range(6):
+            time.sleep(3)
+            result=get_json("/check-result/"+request_id)
+            if all(result.get(node) is not None for node in chosen):
+                break
+        for name in chosen:
+            detail=available.get(name,{})
+            loc=detail.get("location",[])
+            location="/".join(str(p) for p in loc[0:3])
+            out=result.get(name)
+            if not out:
+                print(location,safe_status(name),"pending / no response")
+                continue
+            first=out[0] if isinstance(out,list) and out else []
+            if not isinstance(first,list):
+                print(location,safe_status(name),"unexpected response")
+                continue
+            http_code=first[3] if len(first)>3 else None
+            err=first[2] if len(first)>2 else "network error"
+            elapsed=first[1] if len(first)>1 else None
+            print(location,"HTTP",safe_status(http_code),"elapsed",safe_status(elapsed),"detail",safe_status(err))
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError, ValueError, KeyError, AttributeError) as exc:
+        print("External probe unavailable:",type(exc).__name__)
+
+
 def scan_logs(payload):
     if payload is None:
         return
@@ -158,6 +216,7 @@ def main():
     scan_logs(api_get(f"/api/v1/apps/{app_id}/logs"))
     check_public()
     check_public_pages()
+    distributed_http_check()
     print("\nCompleted. No account resources were modified.")
     return 0
 
