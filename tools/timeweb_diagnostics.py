@@ -240,6 +240,15 @@ def public_dns_and_tls_check():
                       "A answers:",[r.get("data") for r in data.get("Answer",[]) if r.get("type")==1][:5])
         except (urllib.error.URLError,TimeoutError,OSError,ValueError) as exc:
             print(provider,"DNS query failed:",type(exc).__name__)
+    print("DIRECT IP / NEW HOST HTTP")
+    try:
+        with socket.create_connection(("212.193.24.40",80),timeout=8) as raw:
+            raw.sendall(("GET /health HTTP/1.1\\r\\nHost: "+domain+
+                         "\\r\\nConnection: close\\r\\n\\r\\n").encode("ascii"))
+            first=raw.recv(220).split(b"\\r\\n",1)[0].decode("ascii",errors="replace")
+            print("HTTP/80 response:",safe_status(first))
+    except (OSError,TimeoutError,ValueError) as exc:
+        print("HTTP/80 failed:",type(exc).__name__)
     print("DIRECT IP / NEW HOST TLS")
     # This test bypasses DNS solely for diagnosis, without changing DNS.
     try:
