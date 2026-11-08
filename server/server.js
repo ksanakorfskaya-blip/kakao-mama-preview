@@ -31,7 +31,15 @@ const ssl=process.env.DB_SSL==="1" ? {
     ? process.env.DB_CA.replace(/\\n/g,"\n")
     : fs.readFileSync(path.join(__dirname,"ca.crt"),"utf8")
 } : false;
-const pool=new Pool({connectionString:config.databaseUrl,ssl,max:5,connectionTimeoutMillis:10000});
+// node-postgres lets SSL query params override the explicit ssl object.
+// Strip SSL-specific URL params so the verified Timeweb CA is always applied.
+// Never log the database URL: it contains credentials.
+const databaseConnectionUrl=new URL(config.databaseUrl);
+const sslUrlParameters=["sslmode","sslrootcert","sslcert","sslkey","ssl","uselibpqcompat"];
+const removedSslParameters=sslUrlParameters.filter(name=>databaseConnectionUrl.searchParams.has(name));
+for(const name of removedSslParameters)databaseConnectionUrl.searchParams.delete(name);
+if(removedSslParameters.length)console.log("PostgreSQL SSL URL options handled by the trusted server SSL config:",removedSslParameters.join(","));
+const pool=new Pool({connectionString:databaseConnectionUrl.toString(),ssl,max:5,connectionTimeoutMillis:10000});
 const mailer=nodemailer.createTransport({
   host:config.smtpHost,port:config.smtpPort,secure:config.smtpSecure,
   auth:{user:config.smtpUser,pass:config.smtpPassword}
