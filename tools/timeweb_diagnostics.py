@@ -192,6 +192,7 @@ def globalping_russia_check(target_url=PUBLIC):
                   "HTTP",safe_status(status.get("statusCode")),
                   "error",safe_status(status.get("error")),
                   "result_keys",",".join(sorted(status.keys())[:12]),
+                  "failure_source",safe_status(status.get("failureSource")),
                   "TLS",safe_status(status.get("tls",{}).get("authorized") if isinstance(status.get("tls"),dict) else None))
     except urllib.error.HTTPError as exc:
         # An HTTP 422 often means no probes in that region; response is not printed.
@@ -287,6 +288,15 @@ def main():
             print("Technical:",safe_status(d.get("is_technical")))
             print("Domain status:",safe_status(d.get("domain_status")))
             print("Linked IP:",safe_status(d.get("linked_ip")))
+    ns_response=api_get("/api/v1/domains/family-habits-auth-test.tw1.ru/name-servers")
+    if isinstance(ns_response,dict):
+        print("NS response keys:",",".join(sorted(ns_response.keys())[:12]))
+        ns=ns_response.get("name_servers")
+        if isinstance(ns,list):
+            print("NS count:",len(ns))
+            for item in ns[:4]:
+                if isinstance(item,dict):print("NS:",safe_status(item.get("name") or item.get("hostname") or item.get("value")))
+                else:print("NS:",safe_status(item))
     dns_response=api_get("/api/v1/domains/family-habits-auth-test.tw1.ru/dns-records")
     if isinstance(dns_response,dict):
         print("DNS response keys:",",".join(sorted(dns_response.keys())[:12]))
@@ -298,6 +308,12 @@ def main():
                     if isinstance(record,dict):
                         print("Record type:",safe_status(record.get("type")),
                               "record keys:",",".join(sorted(record.keys())[:12]))
+                        if record.get("type")=="A":
+                            val=record.get("data")
+                            if isinstance(val,dict):
+                                print("A record data:",{key:val.get(key) for key in ("ip","value","app_id","subdomain") if key in val})
+                            elif isinstance(val,str) and len(val)<100:
+                                print("A record value:",safe_status(val))
                 break
     for candidate in ("family-habits-auth-test.tw1.ru", "family-habits-test.tw1.ru"):
         result=api_get("/api/v1/check-domain/"+candidate)
