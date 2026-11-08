@@ -1,0 +1,19 @@
+name: Timeweb read-only diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check out diagnostic script
+        uses: actions/checkout@v4
+      - name: Query Timeweb API and public health endpoint
+        env:
+          TIMEWEB_API_TOKEN: ${{ secrets.TIMEWEB_API_TOKEN }}
+        run: python3 tools/timeweb_diagnostics.py
