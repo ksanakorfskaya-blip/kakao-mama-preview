@@ -250,6 +250,18 @@ def main():
         info = detail["app"]
         print("Detail status:", safe_status(info.get("status")))
         print("Detail type:", safe_status(info.get("type")))
+        print("Existing domains:", ", ".join(
+            safe_status(d.get("fqdn") or d.get("domain") or d.get("name"))
+            for d in info.get("domains",[]) if isinstance(d,dict)
+        ))
+    print("\\nTECHNICAL DOMAIN AVAILABILITY")
+    for candidate in ("family-habits-auth-test.tw1.ru", "family-habits-test.tw1.ru"):
+        result=api_get("/api/v1/check-domain/"+candidate)
+        if isinstance(result,dict):
+            print(candidate,"available:",safe_status(result.get("is_domain_available")),
+                  "response keys:", ",".join(sorted(result.keys())[:8]))
+        else:
+            print(candidate,"availability unknown")
 
     deploy_data = api_get(f"/api/v1/apps/{app_id}/deploys?limit=3&offset=0")
     if isinstance(deploy_data, dict) and isinstance(deploy_data.get("deploys"), list):
