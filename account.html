@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Личный кабинет — Мои полезные привычки</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#fff8f1">
+<style>
+:root{font-family:system-ui,"Nunito",sans-serif;color:#44352e;background:#fff9f2}
+*{box-sizing:border-box}body{margin:0;padding:25px 18px;min-height:100vh}
+main{max-width:450px;margin:24px auto;background:#fff;border:1px solid #eee3d7;border-radius:26px;padding:28px 22px;box-shadow:0 12px 38px #382c2212}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:20px;margin:8px 0 12px}p{line-height:1.55;color:#695a50}.nav{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 22px}
+button,a.btn{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:12px 16px;background:#c98164;color:#fff;font-weight:700;text-decoration:none;display:inline-flex;justify-content:center;align-items:center}
+button.secondary,a.secondary{background:#f0e9e1;color:#5a4337}
+button.wide{width:100%;margin:10px 0 4px}
+label.field{display:block;margin:15px 0 10px;font-size:14px;font-weight:650}
+input:not([type="checkbox"]){display:block;width:100%;font:inherit;padding:13px 14px;margin-top:6px;border:1px solid #d9c9ba;border-radius:13px;color:#44352e;background:white}
+input[type="checkbox"]{width:17px;height:17px;margin:0 9px 0 0;vertical-align:middle}
+[hidden]{display:none!important}.note{background:#fff3e2;padding:12px;border-radius:12px;font-size:13px;color:#70574a}
+#notice{padding:12px;border-radius:10px;background:#f5e9e4;color:#643c2d;min-height:2em;margin:10px 0}
+footer{text-align:center;margin:14px;font-size:13px;color:#847268}
+.smalllink{display:inline-block;margin-top:14px;color:#9c6550}
+</style></head>
+<body><main>
+<div style="font-size:35px;margin-bottom:8px">🌱</div>
+<h1>Мои полезные привычки</h1>
+<p>Семейный кабинет. Регистрация родителей бесплатна; дети пользуются приложением без отдельной почты.</p>
+<div id="notice" aria-live="polite" hidden></div>
+<section id="view-login" class="view">
+  <h2>Войти в аккаунт</h2><form id="login"><label class="field">Электронная почта<input name="email" type="email" autocomplete="email" required maxlength="254"></label><label class="field">Пароль<input name="password" type="password" autocomplete="current-password" required></label><button class="wide">Войти</button></form>
+  <div class="nav"><button data-view="register" class="secondary">Зарегистрироваться</button><button data-view="forgot" class="secondary">Забыли пароль?</button></div>
+</section>
+<section id="view-register" class="view" hidden>
+  <h2>Регистрация родителя</h2><form id="register"><label class="field">Электронная почта<input name="email" type="email" autocomplete="email" required maxlength="254"></label><label class="field">Придумайте пароль (от 12 символов)<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label><label class="field"><input name="isAdult" type="checkbox" required>Мне исполнилось 18 лет, я родитель или законный представитель</label><button class="wide">Зарегистрироваться</button></form>
+  <p class="note">Мы отправим письмо для подтверждения почты. Не вводите данные детей до запуска защищённой версии и публикации политики конфиденциальности.</p>
+  <button class="secondary" data-view="login">← Назад ко входу</button>
+</section>
+<section id="view-verify" class="view" hidden><h2>Подтвердить электронную почту</h2><p>Нажмите кнопку, чтобы завершить подтверждение адреса.</p><button class="wide" id="verify">Подтвердить и войти</button></section>
+<section id="view-forgot" class="view" hidden><h2>Восстановление доступа</h2><form id="forgot"><label class="field">Электронная почта<input name="email" type="email" autocomplete="email" required></label><button class="wide">Отправить ссылку</button></form><button data-view="login" class="secondary">← Назад</button></section>
+<section id="view-reset" class="view" hidden><h2>Новый пароль</h2><form id="reset"><label class="field">Новый пароль<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label><button class="wide">Сменить пароль</button></form></section>
+<section id="view-account" class="view" hidden><h2>Личный кабинет родителя</h2><p>Вы вошли как <strong id="signedin"></strong></p><a class="btn" href="/">Открыть приложение →</a>
+  <div id="importbox" hidden><p class="note">На этом телефоне найдены старые записи детей. Их можно перенести в облачный аккаунт, включая сохранённые рисунки. После переноса старые данные останутся в браузере.</p><button class="wide secondary" id="import">Перенести данные с телефона</button></div>
+  <p class="note">Данные кабинета доступны после входа с другого устройства. Для демонстрации используйте вымышленные имена детей.</p>
+  <button id="logout" class="secondary wide">Выйти из аккаунта</button>
+</section>
+<p><a class="smalllink" href="/">← Вернуться к приложению</a></p>
+</main><footer>Доступ к данным семьи — только после входа в аккаунт.</footer>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
+let user=null;
+function say(text){let n=$("notice");n.textContent=text;n.hidden=false;}
+function show(name){document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="view-"+name);$("notice").hidden=true;}
+async function api(url,method,body){
+  const r=await fetch(url,{method:method||"GET",credentials:"same-origin",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(data.error||"Ошибка сервера");
+  return data;
+}
+async function submit(fn){try{await fn();}catch(e){say(e.message);}}
+function val(form){return Object.fromEntries(new FormData(form).entries());}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+$("login").addEventListener("submit",e=>{e.preventDefault();submit(async()=>{let x=val(e.target);await api("/api/auth/login","POST",x);await signedIn();});});
+$("register").addEventListener("submit",e=>{e.preventDefault();submit(async()=>{let x=val(e.target);x.isAdult=e.target.elements.isAdult.checked;await api("/api/auth/register","POST",x);show("login");say("Письмо с подтверждением отправлено. Перейдите по ссылке из почты.");});});
+$("forgot").addEventListener("submit",e=>{e.preventDefault();submit(async()=>{await api("/api/auth/forgot","POST",val(e.target));show("login");say("Если адрес зарегистрирован, письмо для восстановления отправлено.");});});
+$("verify").addEventListener("click",()=>submit(async()=>{await api("/api/auth/verify","POST",{token:params.get("verify")});history.replaceState(null,"","/account.html");await signedIn();}));
+$("reset").addEventListener("submit",e=>{e.preventDefault();submit(async()=>{await api("/api/auth/reset","POST",{token:params.get("reset"),password:val(e.target).password});history.replaceState(null,"","/account.html");show("login");say("Пароль изменён. Войдите в аккаунт.");});});
+$("logout").addEventListener("click",()=>submit(async()=>{await api("/api/auth/logout","POST",{});user=null;show("login");say("Вы вышли из аккаунта.");}));
+function guest(){try{let s=JSON.parse(localStorage.getItem("family-habits-demo-2026"));return s&&Array.isArray(s.children)&&s.children.length?s:null;}catch(e){return null;}}
+async function signedIn(){let m=await api("/api/auth/me");if(!m.authenticated){show("login");return;}user=m.user;$("signedin").textContent=user.email;show("account");
+ const g=guest(),remote=await api("/api/state");$("importbox").hidden=!(g&&g.children?.length);$("importbox").dataset.hasRemote=remote.state.children?.length?"yes":"no";
+}
+function guestDrawings(){
+ return new Promise(resolve=>{
+   if(!("indexedDB" in window))return resolve([]);
+   let req=indexedDB.open("family-habits-art-v1",1);
+   req.onerror=()=>resolve([]);
+   req.onupgradeneeded=()=>{};
+   req.onsuccess=()=>{
+     const db=req.result;
+     if(!db.objectStoreNames.contains("drawings")){db.close();return resolve([]);}
+     const tx=db.transaction("drawings","readonly"),q=tx.objectStore("drawings").getAll();
+     q.onsuccess=()=>{db.close();resolve(q.result||[]);};
+     q.onerror=()=>{db.close();resolve([]);};
+   };
+ });
+}
+$("import").addEventListener("click",()=>submit(async()=>{
+ const state=guest();if(!state)return say("Нет данных для переноса.");
+ const hasRemote=$("importbox").dataset.hasRemote==="yes";
+ if(!confirm(hasRemote?"В аккаунте уже есть дети. Заменить их текущими записями с телефона? Это действие нельзя отменить.":"Перенести профили детей, записи и рисунки с этого телефона в облако?"))return;
+ $("import").disabled=true;
+ try{
+  await api("/api/state","PUT",{state});
+  let rows=await guestDrawings();
+  try{let fallback=JSON.parse(localStorage.getItem("family-habits-art-fallback-v1")||"[]");if(Array.isArray(fallback))rows.push(...fallback);}catch(e){}
+  let errors=0;
+  for(let i=0;i<rows.length;i++){
+    let r=rows[i];
+    try{await api("/api/drawings","POST",{id:r.id,childId:r.childId,day:r.day,image:r.image});}catch(e){errors++;}
+  }
+  $("importbox").hidden=true;
+  say(errors?"Профили и дневник перенесены, но часть рисунков не удалось загрузить ("+errors+"). Не удаляйте старые данные телефона.":"Данные перенесены. Теперь откройте приложение!");
+ }finally{$("import").disabled=false;}
+}));
+async function init(){
+ if(params.has("verify")){show("verify");return;}
+ if(params.has("reset")){show("reset");return;}
+ try{await signedIn();}catch(e){show("login");say("Сервер регистрации пока не подключён: "+e.message);}
+}
+init();
+})();
+</script></body></html>
