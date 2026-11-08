@@ -72,6 +72,24 @@ def check_public():
         print("GET /health:", type(exc).__name__)
 
 
+def check_public_pages():
+    print("\\nPUBLIC WEB PAGES")
+    for route in ("/", "/account.html", "/api/auth/me"):
+        req = urllib.request.Request(PUBLIC + route, method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=12) as response:
+                content_type = response.headers.get("content-type", "").split(";")[0]
+                print(route, "HTTP", response.status, "content-type:", safe_status(content_type))
+                # Check that the page exists without printing user or session data.
+                if route in ("/", "/account.html"):
+                    body = response.read(30000).decode("utf-8", errors="replace")
+                    print("  expected app text:", "yes" if "Мои полезные привычки" in body or "Личный кабинет" in body else "not found")
+        except urllib.error.HTTPError as exc:
+            print(route, "HTTP", exc.code)
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            print(route, type(exc).__name__)
+
+
 def scan_logs(payload):
     if payload is None:
         return
@@ -139,6 +157,7 @@ def main():
     print("\nAPPLICATION LOG SIGNALS")
     scan_logs(api_get(f"/api/v1/apps/{app_id}/logs"))
     check_public()
+    check_public_pages()
     print("\nCompleted. No account resources were modified.")
     return 0
 
