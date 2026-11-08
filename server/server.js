@@ -27,7 +27,9 @@ const config={
 };
 const ssl=process.env.DB_SSL==="1" ? {
   rejectUnauthorized:true,
-  ...(process.env.DB_CA?{ca:process.env.DB_CA.replace(/\\n/g,"\n")}:{})
+  ca:process.env.DB_CA
+    ? process.env.DB_CA.replace(/\\n/g,"\n")
+    : fs.readFileSync(path.join(__dirname,"ca.crt"),"utf8")
 } : false;
 const pool=new Pool({connectionString:config.databaseUrl,ssl,max:5,connectionTimeoutMillis:10000});
 const mailer=nodemailer.createTransport({
