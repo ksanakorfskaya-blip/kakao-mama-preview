@@ -2,6 +2,10 @@ name: Timeweb read-only diagnostics
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - tools/timeweb_diagnostics.py
 
 permissions:
   contents: read
