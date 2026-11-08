@@ -29,7 +29,7 @@ async function flush(){
       const copy=pending;pending=null;
       try{await api("/api/state","PUT",{state:copy});failed=false;}
       catch(e){
-        pending=copy;failed=true;
+        if(pending===null)pending=copy;failed=true;
         alertStatus("⚠️ Не удалось сохранить в облаке. Проверь интернет и повтори действие.");
         throw e;
       }
