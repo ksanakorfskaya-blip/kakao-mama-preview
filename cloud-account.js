@@ -1,7 +1,7 @@
 /* Cloud account bridge. Active only when the app is served by the new account backend. */
 (function(){
 "use strict";
-let user=null,ongoing=Promise.resolve(),pending=null,working=false,failed=false;
+let user=null,ongoing=Promise.resolve(),pending=null,working=false,failed=false,resetting=false;
 const guestKey="family-habits-demo-2026";
 function api(url,method,body){
   return fetch(url,{method:method||"GET",credentials:"same-origin",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,cache:"no-store"})
@@ -38,7 +38,7 @@ async function flush(){
   return ongoing;
 }
 function saveState(value){
-  if(!user)return Promise.resolve();
+  if(!user||resetting)return Promise.resolve();
   pending=JSON.parse(JSON.stringify(value));
   try{localStorage.setItem(cachedKey(),JSON.stringify(pending));}catch(e){}
   return flush().catch(()=>{});
@@ -56,6 +56,19 @@ async function addDrawing(record){
 async function drawings(childId,day){return (await api("/api/drawings?childId="+encodeURIComponent(childId)+"&day="+encodeURIComponent(day))).drawings;}
 async function deleteDrawingsPast(before){await api("/api/drawings/past","DELETE",{before});}
 async function deleteDrawingsChild(childId){await api("/api/drawings/child","DELETE",{childId});}
+// Wait for an already-sent save so it cannot restore data after server deletion.
+async function resetFamily(){
+  if(!active())throw Error("Нет аккаунта");
+  resetting=true;
+  try{
+    pending=null;
+    await ongoing.catch(()=>{});
+    pending=null;
+    await api("/api/family/reset","DELETE");
+    failed=false;
+    try{localStorage.removeItem(cachedKey());}catch(e){}
+  }finally{resetting=false;}
+}
 function guestData(){try{let data=JSON.parse(localStorage.getItem(guestKey));return data?.children?.length?data:null;}catch(e){return null;}}
-window.FamilyCloud={boot,active,account,saveState,waitForSave,addDrawing,drawings,deleteDrawingsPast,deleteDrawingsChild,guestData,api};
+window.FamilyCloud={boot,active,account,saveState,waitForSave,addDrawing,drawings,deleteDrawingsPast,deleteDrawingsChild,resetFamily,guestData,api};
 })();

@@ -243,6 +243,21 @@ app.delete("/api/drawings/past",signedIn,async(req,res,next)=>{
 app.delete("/api/drawings/child",signedIn,async(req,res,next)=>{
   try{const childId=req.body?.childId;if(!validChild(childId))return error(res,"Неверный ребёнок");await pool.query("DELETE FROM family_drawings WHERE user_id=$1 AND child_id=$2",[req.user.id,childId]);res.json({ok:true});}catch(e){next(e);}
 });
+// Erase only the signed-in family's profiles and artwork, not their login or other families.
+app.delete("/api/family/reset",signedIn,async(req,res,next)=>{
+  let client;
+  try{
+    client=await pool.connect();
+    await client.query("BEGIN");
+    await client.query("DELETE FROM family_drawings WHERE user_id=$1",[req.user.id]);
+    await client.query("DELETE FROM family_profiles WHERE user_id=$1",[req.user.id]);
+    await client.query("COMMIT");
+    res.json({ok:true});
+  }catch(e){
+    if(client)await client.query("ROLLBACK").catch(()=>{});
+    next(e);
+  }finally{if(client)client.release();}
+});
 app.delete("/api/account",signedIn,async(req,res,next)=>{
   try{await pool.query("DELETE FROM family_users WHERE id=$1",[req.user.id]);clearSession(res);res.json({ok:true});}catch(e){next(e);}
 });
